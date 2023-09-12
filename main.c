@@ -20,11 +20,13 @@ typedef struct
 command_t commands[] = {
     {"cd", cd, "Change directory"},
     {"pwd", pwd, "Print working directory"},
-    {"mkdir", mkdir, "Make directory"},
+    {"mkdir", makedir, "Make directory"},
     {"rmdir", remdir, "Remove directory"},
     {"ls", ls, "List directory"},
     {"quit", quit, "Quit shell"},
     {"help", help, "Show help"},
+    {"save", save, "Save folder structure"},
+    {"load", load, "Load folder structure"},
 };
 
 int help(char *unused)
@@ -57,10 +59,8 @@ int takeInput(char *str)
 
 command_method_t findCommand(char *input)
 {
-    fprintf(stderr, "input: [%s]\n", input);
     for (int i = 0; i < sizeof(commands) / sizeof(command_t); i++)
     {
-        fprintf(stderr, "command %d: %s\n", i, commands[i].name);
         if (strcmp(commands[i].name, input) == 0)
         {
             return commands[i].method;
@@ -76,12 +76,10 @@ void executeCommand(char *parsed[])
     {
         if (parsed[1] == NULL)
         {
-            printf("Command: %s ()\n", parsed[0]);
             method("");
         }
         else
         {
-            printf("Command: %s (%s)\n", parsed[0], parsed[1]);
             method(parsed[1]);
         }
     }
@@ -94,7 +92,7 @@ void executeCommand(char *parsed[])
 int main()
 {
     char inputString[MAXCOM];
-
+    initCommands();
     while (1)
     {
         // take input
@@ -104,6 +102,7 @@ int main()
 
         // process
         executeCommand(parsedArgs);
+        free(parsedArgs);
     }
     return 0;
 }
