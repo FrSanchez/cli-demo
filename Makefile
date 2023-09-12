@@ -5,9 +5,8 @@ objects = main.o commands.o
 all: $(objects)
 	$(CC) $(CFLAGS) -o cli $(objects) -lreadline
 
-main.o: main.cpp
-
-commands.o: commands.cpp
+%.o : %.c
+		$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 clean:
 	rm -f *.o cli

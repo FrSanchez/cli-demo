@@ -3,41 +3,42 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/wait.h>
-#include <readline/readline.h>
-#include <map>
-#include <iostream>
+#include <ctype.h>
 #include "commands.h"
 
 #define MAXCOM 1000 // max number of letters to be supported
 #define MAXLIST 100 // max number of commands to be supported
 
 typedef int (*command_method_t)(char *path);
-std::map<std::string, command_method_t> commands;
-
-void initCommands()
+typedef struct
 {
-    commands["cd"] = cd;
-    commands["pwd"] = pwd;
-    commands["mkdir"] = mkdir;
-    commands["rmdir"] = rmdir;
-    commands["ls"] = ls;
-    commands["quit"] = quit;
-    commands["help"] = help;
-}
+    char *name;
+    command_method_t method;
+} command_t;
+
+command_t commands[] = {
+    {"cd", cd},
+    {"pwd", pwd},
+    {"mkdir", mkdir},
+    {"rmdir", rmdir},
+    {"ls", ls},
+    {"quit", quit},
+    {"help", help},
+};
 
 // Function to take input
 int takeInput(char *str)
 {
-    char *buf;
-
-    buf = readline("\n>>> ");
-    if (strlen(buf) != 0)
+    printf(">>> ");
+    if (fgets(str, MAXCOM, stdin) == NULL)
     {
-        strncpy(str, buf, MAXCOM);
-        return 0;
+        quit("");
     }
-    return 1;
+    if (strlen(str) == 0)
+    {
+        return 1;
+    }
+    return 0;
 }
 
 // Function to print Current Directory.
@@ -46,6 +47,18 @@ void printDir()
     char cwd[1024];
     getcwd(cwd, sizeof(cwd));
     printf("\nDir: %s", cwd);
+}
+
+command_method_t findCommand(char *input)
+{
+    for (int i = 0; i < sizeof(commands) / sizeof(command_t); i++)
+    {
+        if (strcmp(commands[i].name, input) == 0)
+        {
+            return commands[i].method;
+        }
+    }
+    return NULL;
 }
 
 // function for parsing command words
@@ -62,22 +75,23 @@ void parseSpace(char *str, char **parsed)
         if (strlen(parsed[i]) == 0)
             i--;
     }
-    if (commands.find(parsed[0]) == commands.end())
-    {
-        printf("Command not found [%s]\n", parsed[0]);
-    }
-    else
+    command_method_t method = findCommand(parsed[0]);
+    if (method != NULL)
     {
         if (parsed[1] == NULL)
         {
             printf("Command: %s ()\n", parsed[0]);
-            commands[parsed[0]]("");
+            method("");
         }
         else
         {
             printf("Command: %s (%s)\n", parsed[0], parsed[1]);
-            commands[parsed[0]](parsed[1]);
+            method(parsed[1]);
         }
+    }
+    else
+    {
+        printf("Command not found: %s\n", parsed[0]);
     }
 }
 
@@ -95,7 +109,6 @@ int main()
     char inputString[MAXCOM], *parsedArgs[MAXLIST];
     char *parsedArgsPiped[MAXLIST];
     int execFlag = 0;
-    initCommands();
 
     while (1)
     {
