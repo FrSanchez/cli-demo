@@ -1,7 +1,10 @@
+void initCommands(void);
 int cd(char *path);
-int pwd(char *unused);
-int mkdir(char *path);
+int makedir(char *path);
 int remdir(char *path);
-int ls(char *unused);
-int quit(char *unused);
-int help(char *unused);
+int ls(char *path);
+int pwd(char *);
+int quit(char *);
+int help(char *);
+int save(char *);
+int load(char *);

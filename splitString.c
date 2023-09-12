@@ -9,7 +9,7 @@ char **splitString(char *str, char *seps)
 {
     char **res = NULL;
     char *p = strtok(str, seps);
-    int n_spaces = 0, i;
+    int n_spaces = 0;
 
     while (p)
     {

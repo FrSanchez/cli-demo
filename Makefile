@@ -1,5 +1,5 @@
-CC = cc # Flag for implicit rules
-CFLAGS = -g # Flag for implicit rules. Turn on debug info
+CC = clang # Flag for implicit rules
+CFLAGS = -g -DDEBUG -O0
 LDFLAGS = # Flag for implicit rules
 LDLIBS = # Flag for implicit rules
 
@@ -13,3 +13,4 @@ all: $(objects)
 
 clean:
 	rm -f *.o cli
+
