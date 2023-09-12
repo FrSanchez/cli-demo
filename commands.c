@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include "commands.h"
 #include "splitString.h"
-#include "tree.h"
+#include "Tree.h"
 #include "list.h"
 
 Node *root;
