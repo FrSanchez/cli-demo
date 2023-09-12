@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include "commands.h"
 #include "splitString.h"
-#include "Tree.h"
+#include "tree.h"
 #include "list.h"
 
 Node *root;
@@ -62,7 +62,7 @@ Node *navigateToFolder(char *path)
             {
                 printf("Directory does not exist\n");
                 free(tokens);
-                return 1;
+                return NULL;
             }
         }
     }
@@ -78,8 +78,12 @@ int cd(char *path)
     if (validatePath(path))
     {
         Node *folder = navigateToFolder(path);
-        cwd = folder;
-        return 0;
+        if (folder)
+        {
+            cwd = folder;
+            return 0;
+        }
+        return 1;
     }
 }
 
@@ -169,6 +173,10 @@ int remdir(char *path)
     if (validatePath(path))
     {
         Node *folder = navigateToFolder(path);
+        if (!folder)
+        {
+            return 1;
+        }
         if (folder == root)
         {
             printf("Cannot remove root directory\n");
@@ -205,8 +213,9 @@ int ls(char *path)
         {
             printf("%s\n", folder->children[i]->name);
         }
+        return 0;
     }
-    return 0;
+    return 1;
 }
 
 /**
