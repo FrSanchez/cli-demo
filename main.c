@@ -100,6 +100,7 @@ int main()
 
         // process
         executeCommand(parsedArgs);
+        free(parsedArgs);
     }
     return 0;
 }

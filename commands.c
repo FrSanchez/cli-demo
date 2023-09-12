@@ -41,6 +41,10 @@ int cd(char *path)
     if (validatePath(path))
     {
         Node *folder = cwd;
+        if (isAbsolutePath(path))
+        {
+            folder = root;
+        }
         char **tokens = splitString(path, "/");
         for (int i = 0; tokens[i]; i++)
         {
@@ -48,27 +52,30 @@ int cd(char *path)
 #ifdef DEBUG
             fprintf(stderr, "(%s) %d token: %s\n", folder->name, i, token);
 #endif
-            if (strcmp(token, "..") == 0 && folder->parent)
+            if (strcmp(token, "..") == 0)
             {
-                folder = folder->parent;
+                if (folder->parent)
+                {
+                    folder = folder->parent;
+                }
             }
             else
             {
-                // if (strcmp(token, "." != 0))
+                Node *child = hasChild(folder, token);
+                if (child)
                 {
-                    Node *child = hasChild(folder, token);
-                    if (child)
-                    {
-                        folder = child;
-                    }
-                    else
-                    {
-                        printf("Directory does not exist\n");
-                        return 1;
-                    }
+                    folder = child;
+                }
+                else
+                {
+                    printf("Directory does not exist\n");
+                    free(tokens);
+                    return 1;
                 }
             }
         }
+        free(tokens);
+        cwd = folder;
         return 0;
     }
 }
@@ -137,6 +144,7 @@ int makedir(char *path)
                 folder = newNode;
             }
         }
+        free(tokens);
     };
     return 0;
 }
@@ -148,12 +156,40 @@ int remdir(char *path)
 {
     if (validatePath(path))
     {
-        Node *folder = hasChild(cwd, path);
-        if (!folder)
+        char **tokens = splitString(path, "/");
+        Node *folder = cwd;
+        if (isAbsolutePath(path))
         {
-            printf("Directory does not exist\n");
-            return 1;
+            folder = root;
         }
+        for (int i = 0; tokens[i]; i++)
+        {
+            if (strcmp(tokens[i], "..") == 0)
+            {
+                if (folder->parent)
+                {
+                    if (folder->parent)
+                    {
+                        folder = folder->parent;
+                    }
+                }
+            }
+            else
+            {
+                Node *next = hasChild(folder, tokens[i]);
+                if (next)
+                {
+                    folder = next;
+                }
+                else
+                {
+                    printf("Directory does not exist\n");
+                    free(tokens);
+                    return 1;
+                }
+            }
+        }
+        free(tokens);
         if (folder == root)
         {
             printf("Cannot remove root directory\n");
@@ -162,6 +198,11 @@ int remdir(char *path)
         if (folder->numChildren > 0)
         {
             printf("Directory is not empty\n");
+            return 1;
+        }
+        if (folder == cwd)
+        {
+            printf("Can't remove current directory\n");
             return 1;
         }
         removeChild(folder->parent, folder);
