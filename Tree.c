@@ -10,7 +10,7 @@ Node *createEmptyNode(const char *name)
 Node *createNode(const char *name, int numChildren)
 {
     Node *node = (Node *)malloc(sizeof(Node));
-    node->name = (char *)malloc(sizeof(char *) * strlen(name));
+    node->name = (char *)malloc(sizeof(char *) * strlen(name) + 1);
     strcpy(node->name, name);
     node->numChildren = numChildren;
     node->children = (Node **)malloc(sizeof(Node *) * numChildren);

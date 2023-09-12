@@ -6,6 +6,7 @@
 #include "commands.h"
 #include "splitString.h"
 #include "Tree.h"
+#include "list.h"
 
 Node *root;
 Node *cwd;
@@ -33,6 +34,42 @@ int validatePath(char *path)
     return 1;
 }
 
+Node *navigateToFolder(char *path)
+{
+    Node *folder = cwd;
+    if (isAbsolutePath(path))
+    {
+        folder = root;
+    }
+    char **tokens = splitString(path, "/");
+    for (int i = 0; tokens[i]; i++)
+    {
+        if (strcmp(tokens[i], "..") == 0)
+        {
+            if (folder->parent)
+            {
+                folder = folder->parent;
+            }
+        }
+        else
+        {
+            Node *next = hasChild(folder, tokens[i]);
+            if (next)
+            {
+                folder = next;
+            }
+            else
+            {
+                printf("Directory does not exist\n");
+                free(tokens);
+                return 1;
+            }
+        }
+    }
+    free(tokens);
+    return folder;
+}
+
 /**
  * Function to change directory
  */
@@ -40,59 +77,20 @@ int cd(char *path)
 {
     if (validatePath(path))
     {
-        Node *folder = cwd;
-        if (isAbsolutePath(path))
-        {
-            folder = root;
-        }
-        char **tokens = splitString(path, "/");
-        for (int i = 0; tokens[i]; i++)
-        {
-            char *token = tokens[i];
-#ifdef DEBUG
-            fprintf(stderr, "(%s) %d token: %s\n", folder->name, i, token);
-#endif
-            if (strcmp(token, "..") == 0)
-            {
-                if (folder->parent)
-                {
-                    folder = folder->parent;
-                }
-            }
-            else
-            {
-                Node *child = hasChild(folder, token);
-                if (child)
-                {
-                    folder = child;
-                }
-                else
-                {
-                    printf("Directory does not exist\n");
-                    free(tokens);
-                    return 1;
-                }
-            }
-        }
-        free(tokens);
+        Node *folder = navigateToFolder(path);
         cwd = folder;
         return 0;
     }
 }
 
-/*
- * Prints current working directory
- */
-int pwd(char *unused)
+char *printFolder(Node *pwd)
 {
-    char path[1024] = {'\0'};
-    if (cwd == root)
-    {
-        puts("/");
-        return 0;
-    }
-    Node *folder = cwd->parent;
-    strcpy(path, cwd->name);
+    char *path = (char *)malloc(sizeof(char) * 1024);
+    Node *folder = pwd->parent;
+#ifdef DEBUG
+    fprintf(stderr, "cwd: [%s]\n", pwd->name);
+#endif
+    strcpy(path, pwd->name);
     while (folder)
     {
         char temp[1024] = {'\0'};
@@ -100,7 +98,21 @@ int pwd(char *unused)
         strcpy(path, temp);
         folder = folder->parent;
     }
-    puts(path);
+    return path;
+}
+
+/*
+ * Prints current working directory
+ */
+int pwd(char *unused)
+{
+    if (!cwd->parent)
+    {
+        puts("/");
+        return 0;
+    }
+    char *path = printFolder(cwd);
+    free(path);
     return 0;
 }
 
@@ -156,40 +168,7 @@ int remdir(char *path)
 {
     if (validatePath(path))
     {
-        char **tokens = splitString(path, "/");
-        Node *folder = cwd;
-        if (isAbsolutePath(path))
-        {
-            folder = root;
-        }
-        for (int i = 0; tokens[i]; i++)
-        {
-            if (strcmp(tokens[i], "..") == 0)
-            {
-                if (folder->parent)
-                {
-                    if (folder->parent)
-                    {
-                        folder = folder->parent;
-                    }
-                }
-            }
-            else
-            {
-                Node *next = hasChild(folder, tokens[i]);
-                if (next)
-                {
-                    folder = next;
-                }
-                else
-                {
-                    printf("Directory does not exist\n");
-                    free(tokens);
-                    return 1;
-                }
-            }
-        }
-        free(tokens);
+        Node *folder = navigateToFolder(path);
         if (folder == root)
         {
             printf("Cannot remove root directory\n");
@@ -215,9 +194,17 @@ int remdir(char *path)
  */
 int ls(char *path)
 {
-    for (int i = 0; i < cwd->numChildren; i++)
+    Node *folder = cwd;
+    if (path != NULL && strlen(path) > 0)
     {
-        printf("%s\n", cwd->children[i]->name);
+        folder = navigateToFolder(path);
+    }
+    if (folder)
+    {
+        for (int i = 0; i < folder->numChildren; i++)
+        {
+            printf("%s\n", folder->children[i]->name);
+        }
     }
     return 0;
 }
@@ -232,12 +219,51 @@ int quit(char *unused)
     return 0; // may not be needed this line
 }
 
+ListNode *listFolders(Node *folder, ListNode *head)
+{
+    head = insertIntoList(head, printFolder(folder));
+    for (int i = 0; i < folder->numChildren; i++)
+    {
+        head = listFolders(folder->children[i], head);
+    }
+    return head;
+}
+
 int save(char *)
 {
+    FILE *fp = fopen("save.txt", "w");
+    if (fp == NULL)
+    {
+        printf("Error opening file!\n");
+    }
+    ListNode *head = NULL;
+    head = listFolders(root, head);
+    if (head && head->next)
+    {
+        ListNode *current = head->next;
+        while (current)
+        {
+            fprintf(fp, "%s\n", current->data);
+            current = current->next;
+        }
+    }
+    fclose(fp);
     return 0;
 }
 
 int load(char *)
 {
+    FILE *fp = fopen("save.txt", "r");
+    if (fp == NULL)
+    {
+        printf("Error opening file!\n");
+    }
+    char line[1024];
+    while (fgets(line, sizeof(line), fp))
+    {
+        line[strcspn(line, "\r\n")] = 0;
+        makedir(line);
+    }
+    fclose(fp);
     return 0;
 }

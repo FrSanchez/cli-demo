@@ -25,6 +25,8 @@ command_t commands[] = {
     {"ls", ls, "List directory"},
     {"quit", quit, "Quit shell"},
     {"help", help, "Show help"},
+    {"save", save, "Save folder structure"},
+    {"load", load, "Load folder structure"},
 };
 
 int help(char *unused)
