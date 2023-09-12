@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "tree.h"
+#include "Tree.h"
 
 Node *createEmptyNode(const char *name)
 {
