@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 /**
  * Function to split a string into an array of strings
@@ -28,4 +29,15 @@ char **splitString(char *str, char *seps)
     res[n_spaces] = 0;
 
     return res;
+}
+
+char *toUpper(const char *input)
+{
+    char *output = malloc(strlen(input) + 1);
+    strcpy(output, input);
+    for (int i = 0; i < strlen(output); i++)
+    {
+        output[i] = toupper(output[i]);
+    }
+    return output;
 }

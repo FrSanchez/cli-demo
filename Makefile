@@ -3,7 +3,7 @@ CFLAGS = -g -DDEBUG -O0
 LDFLAGS = # Flag for implicit rules
 LDLIBS = # Flag for implicit rules
 
-objects = main.o commands.o splitString.o Tree.c list.c
+objects = main.o commands.o splitString.o Tree.c list.c logger.c
 
 all: $(objects)
 	$(CC) $(CFLAGS) -o cli $(objects) $(LDFLAGS) $(LDLIBS)
