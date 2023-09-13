@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include "commands.h"
-#include "splitString.h"
+#include "stringUtils.h"
 #include "Tree.h"
 #include "list.h"
 #include "logger.h"
@@ -12,13 +12,22 @@
 Node *root;
 Node *cwd;
 
-#define isAbsolutePath(path) (path[0] == '/')
+Node *getCwd()
+{
+    return cwd;
+}
+
+Node *getRoot()
+{
+    return root;
+}
 
 void initCommands(char *saveFile)
 {
     root = createEmptyNode("");
     cwd = root;
-    load(saveFile);
+    char *args[] = {saveFile};
+    load(1, args);
 }
 
 /*
@@ -44,7 +53,7 @@ Node *navigateToFolder(char *path)
     {
         folder = root;
     }
-    char **tokens = splitString(path, "/");
+    char **tokens = splitString(path, "/", NULL);
     for (int i = 0; tokens[i]; i++)
     {
         if (strcmp(tokens[i], "..") == 0)
@@ -76,11 +85,15 @@ Node *navigateToFolder(char *path)
 /**
  * Function to change directory
  */
-int cd(char *path)
+int cd(int argc, char *args[])
 {
-    if (validatePath(path))
+    if (args == NULL || args[0] == NULL)
     {
-        Node *folder = navigateToFolder(path);
+        return 0;
+    }
+    if (validatePath(args[0]))
+    {
+        Node *folder = navigateToFolder(args[0]);
         if (folder)
         {
             cwd = folder;
@@ -88,6 +101,7 @@ int cd(char *path)
         }
         return 1;
     }
+    return 0;
 }
 
 char *printFolder(Node *pwd)
@@ -109,8 +123,10 @@ char *printFolder(Node *pwd)
 /*
  * Prints current working directory
  */
-int pwd(char *unused)
+int pwd(int argc, char *__unused__[])
 {
+    UNUSED(argc);
+    UNUSED(__unused__);
     if (!cwd->parent)
     {
         puts("/");
@@ -123,50 +139,14 @@ int pwd(char *unused)
 }
 
 /**
- * Function to make a directory
- */
-int makedir(char *path)
-{
-    if (validatePath(path))
-    {
-        Node *folder = cwd;
-        if (isAbsolutePath(path))
-        {
-            folder = root;
-        }
-        char **tokens = splitString(path, "/");
-        logDebug("tokens: %d\n", sizeof(tokens));
-        for (int i = 0; tokens[i]; i++)
-        {
-            logDebug("(%s) %d token: %s\n", folder->name, i, tokens[i]);
-
-            Node *child;
-            if (child = hasChild(folder, tokens[i]))
-            {
-                logInfo("%s exists\n", tokens[i]);
-                folder = child;
-            }
-            else
-            {
-                logDebug("creating %s\n", tokens[i]);
-                Node *newNode = createEmptyNode(tokens[i]);
-                addChild(folder, newNode);
-                folder = newNode;
-            }
-        }
-        free(tokens);
-    };
-    return 0;
-}
-
-/**
  * Function to remove a directory
  */
-int remdir(char *path)
+int remdir(int argc, char *args[])
 {
+    char *path = args[0];
     if (validatePath(path))
     {
-        Node *folder = navigateToFolder(path);
+        Node *folder = navigateToFolder(&path[0]);
         if (!folder)
         {
             return 1;
@@ -194,8 +174,9 @@ int remdir(char *path)
 /**
  * Function to list directory
  */
-int ls(char *path)
+int ls(int argc, char *args[])
 {
+    char *path = args[0];
     Node *folder = cwd;
     if (path != NULL && strlen(path) > 0)
     {
@@ -215,9 +196,10 @@ int ls(char *path)
 /**
  * Function to quit
  */
-int quit(char *unused)
+int quit(int argc, char *__unused__[])
 {
-    save(NULL);
+    UNUSED(__unused__);
+    save(0, NULL);
     printf("\nGoodbye\n");
     exit(0);
     return 0; // may not be needed this line
@@ -233,8 +215,9 @@ ListNode *listFolders(Node *folder, ListNode *head)
     return head;
 }
 
-int save(char *arg)
+int save(int argc, char *args[])
 {
+    char *arg = args ? args[0] : NULL;
     char *fileName = DEFAULT_SAVE_FILE;
     if (arg && strlen(arg) > 0)
     {
@@ -261,8 +244,9 @@ int save(char *arg)
     return 0;
 }
 
-int load(char *arg)
+int load(int argc, char *args[])
 {
+    char *arg = args[0];
     char *fileName = DEFAULT_SAVE_FILE;
     if (arg && strlen(arg) > 0)
     {
@@ -273,12 +257,14 @@ int load(char *arg)
     if (fp == NULL)
     {
         logError("Error opening file!\n", NULL);
+        return 0;
     }
     char line[1024];
     while (fgets(line, sizeof(line), fp))
     {
         line[strcspn(line, "\r\n")] = 0;
-        makedir(line);
+        char *mkdirArgs[] = {line};
+        makedir(1, mkdirArgs);
     }
     fclose(fp);
     return 0;

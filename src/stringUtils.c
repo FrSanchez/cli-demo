@@ -6,7 +6,7 @@
 /**
  * Function to split a string into an array of strings
  */
-char **splitString(char *str, char *seps)
+char **splitString(char *str, char *seps, int *size)
 {
     char **res = NULL;
     char *p = strtok(str, seps);
@@ -28,6 +28,10 @@ char **splitString(char *str, char *seps)
     res = (char **)realloc(res, sizeof(char *) * (n_spaces + 1));
     res[n_spaces] = 0;
 
+    if (size != NULL)
+    {
+        *size = n_spaces;
+    }
     return res;
 }
 
@@ -35,7 +39,7 @@ char *toUpper(const char *input)
 {
     char *output = malloc(strlen(input) + 1);
     strcpy(output, input);
-    for (int i = 0; i < strlen(output); i++)
+    for (size_t i = 0; i < strlen(output); i++)
     {
         output[i] = toupper(output[i]);
     }

@@ -6,18 +6,10 @@
 #include <ctype.h>
 #include <getopt.h>
 #include "commands.h"
-#include "splitString.h"
+#include "stringUtils.h"
 #include "logger.h"
 
 #define MAXCOM 1000 // max number of letters to be supported
-
-typedef int (*command_method_t)(char *path);
-typedef struct
-{
-    char *name;
-    command_method_t method;
-    char *description;
-} command_t;
 
 command_t commands[] = {
     {"cd", &cd, "Change directory"},
@@ -33,8 +25,10 @@ command_t commands[] = {
 
 command_t *findCommand(char *input);
 
-int help(char *arg)
+int help(int argc, char *args[])
 {
+    UNUSED(argc);
+    char *arg = args[0];
     if (arg != NULL && strlen(arg) > 0)
     {
         command_t *cmd = findCommand(arg);
@@ -50,7 +44,7 @@ int help(char *arg)
         }
     }
     puts("The following commands are available:");
-    for (int i = 0; i < sizeof(commands) / sizeof(command_t); i++)
+    for (int i = 0; commands[i].name; i++)
     {
         printf("%s: %s\n", commands[i].name, commands[i].description);
     }
@@ -63,14 +57,14 @@ int takeInput(char *str)
     printf(">>> ");
     if (fgets(str, MAXCOM, stdin) == NULL)
     {
-        quit("");
+        quit(0, NULL);
     }
+    str[strcspn(str, "\r\n")] = 0;
     if (strlen(str) == 0)
     {
         return 1;
     }
     // remove the \n from the end of the string
-    str[strcspn(str, "\r\n")] = 0;
     return 0;
 }
 
@@ -86,19 +80,12 @@ command_t *findCommand(char *input)
     return NULL;
 }
 
-void executeCommand(char *parsed[])
+void executeCommand(int count, char *parsed[])
 {
     command_t *command = findCommand(parsed[0]);
     if (command != NULL)
     {
-        if (parsed[1] == NULL)
-        {
-            command->method("");
-        }
-        else
-        {
-            command->method(parsed[1]);
-        }
+        command->method(count - 1, &parsed[1]);
     }
     else
     {
@@ -148,8 +135,6 @@ void inputLogLevel(char *level)
 int main(int argc, char *argv[])
 {
     char inputString[MAXCOM];
-    int opt;
-    int debug = 0;
     char *saveFile = NULL;
     char *logLevel = "ERROR";
 
@@ -204,10 +189,11 @@ int main(int argc, char *argv[])
         // take input
         if (takeInput(inputString))
             continue;
-        char **parsedArgs = splitString(inputString, " ");
+        int count;
+        char **parsedArgs = splitString(inputString, " ", &count);
 
         // process
-        executeCommand(parsedArgs);
+        executeCommand(count, parsedArgs);
         free(parsedArgs);
     }
     return 0;
