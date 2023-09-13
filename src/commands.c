@@ -88,6 +88,7 @@ int cd(char *path)
         }
         return 1;
     }
+    return 0;
 }
 
 char *printFolder(Node *pwd)
@@ -109,8 +110,9 @@ char *printFolder(Node *pwd)
 /*
  * Prints current working directory
  */
-int pwd(char *unused)
+int pwd(char *__unused__)
 {
+    UNUSED(__unused__);
     if (!cwd->parent)
     {
         puts("/");
@@ -141,7 +143,7 @@ int makedir(char *path)
             logDebug("(%s) %d token: %s\n", folder->name, i, tokens[i]);
 
             Node *child;
-            if (child = hasChild(folder, tokens[i]))
+            if ((child = hasChild(folder, tokens[i])))
             {
                 logInfo("%s exists\n", tokens[i]);
                 folder = child;
@@ -215,8 +217,9 @@ int ls(char *path)
 /**
  * Function to quit
  */
-int quit(char *unused)
+int quit(char *__unused__)
 {
+    UNUSED(__unused__);
     save(NULL);
     printf("\nGoodbye\n");
     exit(0);

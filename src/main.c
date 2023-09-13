@@ -148,8 +148,6 @@ void inputLogLevel(char *level)
 int main(int argc, char *argv[])
 {
     char inputString[MAXCOM];
-    int opt;
-    int debug = 0;
     char *saveFile = NULL;
     char *logLevel = "ERROR";
 
