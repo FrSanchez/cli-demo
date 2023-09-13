@@ -1,16 +1,30 @@
-CC = clang # Flag for implicit rules
-CFLAGS = -g -DDEBUG -O0
-LDFLAGS = # Flag for implicit rules
-LDLIBS = # Flag for implicit rules
+appname := cli
 
-objects = main.o commands.o splitString.o Tree.c list.c logger.c
+CC := clang
+CXX := clang++
+CXXFLAGS := -std=c++11
+CFLAGS := -g -O0 -Wall -Wextra -pedantic -DDEBUG
+LDFLAGS := -g
+LDLIBS := 
 
-all: $(objects)
-	$(CC) $(CFLAGS) -o cli $(objects) $(LDFLAGS) $(LDLIBS)
+srcfiles := $(shell find . -name "*.c")
+objects  := $(patsubst %.c, %.o, $(srcfiles))
 
-%.o : %.c
-		$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+all: $(appname)
+
+$(appname): $(objects)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $(appname) $(objects) $(LDLIBS)
+
+depend: .depend
+
+.depend: $(srcfiles)
+	rm -f ./.depend
+	$(CC) $(CFLAGS) -MM $^>>./.depend;
 
 clean:
-	rm -f *.o cli
+	rm -f $(objects)
 
+dist-clean: clean
+	rm -f *~ .depend
+
+include .depend
