@@ -5,7 +5,7 @@ CXX := clang++
 CXXFLAGS := -std=c++11
 CFLAGS := -g -O0 -Wall -Wextra -pedantic -DDEBUG
 LDFLAGS := -g
-LDLIBS := 
+LDLIBS :=  
 
 srcfiles := $(shell find . -name "*.c")
 objects  := $(patsubst %.c, %.o, $(srcfiles))

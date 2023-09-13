@@ -6,7 +6,7 @@
 #include <ctype.h>
 #include <getopt.h>
 #include "commands.h"
-#include "splitString.h"
+#include "stringUtils.h"
 #include "logger.h"
 
 #define MAXCOM 1000 // max number of letters to be supported

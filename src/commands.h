@@ -1,3 +1,5 @@
+#pragma once
+
 #define DEFAULT_SAVE_FILE "filesystem.txt"
 #define UNUSED(x) (void)(x)
 

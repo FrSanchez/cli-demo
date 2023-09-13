@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include "commands.h"
-#include "splitString.h"
+#include "stringUtils.h"
 #include "Tree.h"
 #include "list.h"
 #include "logger.h"
