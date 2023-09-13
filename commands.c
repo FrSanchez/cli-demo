@@ -7,16 +7,18 @@
 #include "splitString.h"
 #include "Tree.h"
 #include "list.h"
+#include "logger.h"
 
 Node *root;
 Node *cwd;
 
 #define isAbsolutePath(path) (path[0] == '/')
 
-void initCommands()
+void initCommands(char *saveFile)
 {
     root = createEmptyNode("");
     cwd = root;
+    load(saveFile);
 }
 
 /*
@@ -28,7 +30,7 @@ int validatePath(char *path)
 {
     if (path == NULL || strlen(path) == 0)
     {
-        printf("Path is null or empty\n");
+        logError("Path is null or empty\n", NULL);
         return 0;
     }
     return 1;
@@ -36,6 +38,7 @@ int validatePath(char *path)
 
 Node *navigateToFolder(char *path)
 {
+    logDebug("navigating to %s\n", path);
     Node *folder = cwd;
     if (isAbsolutePath(path))
     {
@@ -91,9 +94,7 @@ char *printFolder(Node *pwd)
 {
     char *path = (char *)malloc(sizeof(char) * 1024);
     Node *folder = pwd->parent;
-#ifdef DEBUG
-    fprintf(stderr, "cwd: [%s]\n", pwd->name);
-#endif
+    logDebug("cwd: [%s]\n", pwd->name);
     strcpy(path, pwd->name);
     while (folder)
     {
@@ -116,6 +117,7 @@ int pwd(char *unused)
         return 0;
     }
     char *path = printFolder(cwd);
+    puts(path);
     free(path);
     return 0;
 }
@@ -133,28 +135,20 @@ int makedir(char *path)
             folder = root;
         }
         char **tokens = splitString(path, "/");
-#ifdef DEBUG
-        fprintf(stderr, "tokens: %d\n", sizeof(tokens));
-#endif
+        logDebug("tokens: %d\n", sizeof(tokens));
         for (int i = 0; tokens[i]; i++)
         {
-#ifdef DEBUG
-            fprintf(stderr, "(%s) %d token: %s\n", folder->name, i, tokens[i]);
-#endif
+            logDebug("(%s) %d token: %s\n", folder->name, i, tokens[i]);
 
             Node *child;
             if (child = hasChild(folder, tokens[i]))
             {
-#ifdef DEBUG
-                fprintf(stderr, "%s exists\n", tokens[i]);
-#endif
+                logInfo("%s exists\n", tokens[i]);
                 folder = child;
             }
             else
             {
-#ifdef DEBUG
-                fprintf(stderr, "creating %s\n", tokens[i]);
-#endif
+                logDebug("creating %s\n", tokens[i]);
                 Node *newNode = createEmptyNode(tokens[i]);
                 addChild(folder, newNode);
                 folder = newNode;
@@ -223,6 +217,7 @@ int ls(char *path)
  */
 int quit(char *unused)
 {
+    save(NULL);
     printf("\nGoodbye\n");
     exit(0);
     return 0; // may not be needed this line
@@ -238,12 +233,18 @@ ListNode *listFolders(Node *folder, ListNode *head)
     return head;
 }
 
-int save(char *)
+int save(char *arg)
 {
-    FILE *fp = fopen("save.txt", "w");
+    char *fileName = DEFAULT_SAVE_FILE;
+    if (arg && strlen(arg) > 0)
+    {
+        fileName = arg;
+    }
+    logInfo("Saving to file: %s\n", fileName);
+    FILE *fp = fopen(fileName, "w");
     if (fp == NULL)
     {
-        printf("Error opening file!\n");
+        logError("Error opening file!\n", NULL);
     }
     ListNode *head = NULL;
     head = listFolders(root, head);
@@ -260,12 +261,18 @@ int save(char *)
     return 0;
 }
 
-int load(char *)
+int load(char *arg)
 {
-    FILE *fp = fopen("save.txt", "r");
+    char *fileName = DEFAULT_SAVE_FILE;
+    if (arg && strlen(arg) > 0)
+    {
+        fileName = arg;
+    }
+    logInfo("Loading from file: %s\n", fileName);
+    FILE *fp = fopen(fileName, "r");
     if (fp == NULL)
     {
-        printf("Error opening file!\n");
+        logError("Error opening file!\n", NULL);
     }
     char line[1024];
     while (fgets(line, sizeof(line), fp))
