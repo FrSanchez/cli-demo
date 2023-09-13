@@ -50,7 +50,7 @@ int help(char *arg)
         }
     }
     puts("The following commands are available:");
-    for (int i = 0; i < sizeof(commands) / sizeof(command_t); i++)
+    for (int i = 0; commands[i].name; i++)
     {
         printf("%s: %s\n", commands[i].name, commands[i].description);
     }
@@ -65,12 +65,12 @@ int takeInput(char *str)
     {
         quit("");
     }
+    str[strcspn(str, "\r\n")] = 0;
     if (strlen(str) == 0)
     {
         return 1;
     }
     // remove the \n from the end of the string
-    str[strcspn(str, "\r\n")] = 0;
     return 0;
 }
 
