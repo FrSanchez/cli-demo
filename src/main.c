@@ -31,10 +31,6 @@ int takeInput(char *str)
 void executeCommand(int count, char *parsed[])
 {
     int cmd = find_command(parsed[0]);
-    if (cmd < 0)
-    {
-        logError("Invalid command: %s\n", parsed[0]);
-    }
     switch (cmd)
     {
     case 0:

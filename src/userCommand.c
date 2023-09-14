@@ -34,6 +34,11 @@ void initUserCommands()
     cwd = root;
 }
 
+char *fileType(FSNODE *node)
+{
+    return node->type == 'D' ? "Directory" : "File";
+}
+
 int find_command(char *user_command)
 {
     int i = 0;
@@ -69,8 +74,30 @@ USER_COMMAND_FN(f_mkdir)
 }
 USER_COMMAND_FN(f_rmdir)
 {
+    FSNODE *child = NULL;
+    if (child = hasChild(cwd, pathname))
+    {
+        if (child->type == 'D')
+        {
+            if (child->child)
+            {
+                logError("Directory %s is not empty\n", pathname);
+                return 0;
+            }
+            removeChildren(cwd, child);
+        }
+        else
+        {
+            logError("%s %s is not a directory\n", fileType(child), pathname);
+        }
+    }
+    else
+    {
+        logError("Directory %s does not exist\n", pathname);
+    }
     return 0;
 }
+
 USER_COMMAND_FN(f_ls)
 {
     FSNODE *node = cwd->child;
@@ -81,16 +108,18 @@ USER_COMMAND_FN(f_ls)
     }
     return 0;
 }
+
 USER_COMMAND_FN(f_cd)
 {
+    if (pathname == NULL || strlen(pathname) == 0)
+    {
+        cwd = root;
+        return 0;
+    }
     FSNODE *child = NULL;
     if ((child = hasChild(cwd, pathname)) && (child->type == 'D'))
     {
         cwd = child;
-    }
-    else if (pathname == NULL || strlen(pathname) == 0)
-    {
-        cwd = root;
     }
     else
     {
@@ -98,6 +127,7 @@ USER_COMMAND_FN(f_cd)
     }
     return 0;
 }
+
 USER_COMMAND_FN_NOARGS(f_pwd)
 {
     FSNODE *node = cwd;
@@ -112,21 +142,51 @@ USER_COMMAND_FN_NOARGS(f_pwd)
     printf("%s\n", path);
     return 0;
 }
+
 USER_COMMAND_FN(f_creat)
 {
     if (pathname == NULL || strlen(pathname) == 0)
     {
         logError("Path is null or empty\n", NULL);
+        return 1;
+    }
+    FSNODE *child;
+    if ((child = hasChild(cwd, pathname)))
+    {
+        logError("%s %s already exists\n", fileType(child), pathname);
         return 0;
     }
     FSNODE *newFile = createNewNode(pathname, 'F');
     addChildren(cwd, newFile);
     return 0;
 }
+
 USER_COMMAND_FN(f_rm)
 {
+    if (pathname == NULL || strlen(pathname) == 0)
+    {
+        logError("Path is null or empty\n", NULL);
+        return 1;
+    }
+    FSNODE *child;
+    if ((child = hasChild(cwd, pathname)))
+    {
+        if (child->type == 'F')
+        {
+            removeChildren(cwd, child);
+        }
+        else
+        {
+            logError("%s %s is not a file\n", fileType(child), pathname);
+        }
+    }
+    else
+    {
+        logError("File %s does not exist\n", pathname);
+    }
     return 0;
 }
+
 USER_COMMAND_FN(f_reload)
 {
     return 0;
