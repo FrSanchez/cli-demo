@@ -217,9 +217,10 @@ char *getFilename(char *str)
     char *suffix = str + n;
     while (0 < n && str[--n] != '/')
         ;
+    suffix = str + n;
     if (str[n] == '/')
     {
-        suffix = str + n + 1;
+        suffix += 1;
     }
     char *answer = malloc(strlen(suffix) + 1);
     strcpy(answer, suffix);
@@ -238,9 +239,9 @@ USER_COMMAND_FN(f_creat)
     char *filename = getFilename(pathname);
     folder = navigateToPath(pathname, 1);
     FSNODE *child;
-    if ((child = hasChild(folder, pathname)))
+    if ((child = hasChild(folder, filename)))
     {
-        logError("%s %s already exists\n", fileType(child), pathname);
+        logError("%s %s already exists\n", fileType(child), filename);
         return 0;
     }
     FSNODE *newFile = createNewNode(filename, 'F');
@@ -256,15 +257,18 @@ USER_COMMAND_FN(f_rm)
         return 1;
     }
     FSNODE *child;
-    if ((child = hasChild(cwd, pathname)))
+    FSNODE *folder = cwd;
+    char *filename = getFilename(pathname);
+    folder = navigateToPath(pathname, 1);
+    if ((child = hasChild(folder, filename)))
     {
         if (child->type == 'F')
         {
-            removeChildren(cwd, child);
+            removeChildren(folder, child);
         }
         else
         {
-            logError("%s %s is not a file\n", fileType(child), pathname);
+            logError("%s %s is not a file\n", fileType(child), filename);
         }
     }
     else
@@ -274,16 +278,13 @@ USER_COMMAND_FN(f_rm)
     return 0;
 }
 
+// custom getline to ingore \n at the end
+// https://stackoverflow.com/questions/18278240/how-does-getline-function-work-here
 int fgetline(FILE *fp, char s[], int lim)
 {
     int c, i;
     for (i = 0; i < lim - 1 && (c = getc(fp)) != EOF && c != '\n'; ++i)
         s[i] = c;
-    // if (c == '\n')
-    // {
-    //     s[i] = c;
-    //     ++i;
-    // }
     s[i] = '\0';
     return i;
 }
