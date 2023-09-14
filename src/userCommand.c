@@ -57,7 +57,7 @@ int find_command(char *user_command)
     return -1;
 }
 
-FSNODE *navigateToPath(char *pathname)
+FSNODE *navigateToPath(char *pathname, int offset)
 {
     FSNODE *folder = cwd;
     if (pathname[0] == '/')
@@ -66,15 +66,11 @@ FSNODE *navigateToPath(char *pathname)
     }
     int count;
     char **parts = splitString(pathname, "/", &count);
-    for (int i = 0; i < count; i++)
+    for (int i = 0; i < count - offset; i++)
     {
         if (strcmp(parts[i], "..") == 0)
         {
             folder = folder->parent;
-        }
-        else if (strcmp(parts[i], ".") == 0)
-        {
-            continue;
         }
         else
         {
@@ -98,34 +94,65 @@ USER_COMMAND_FN(f_mkdir)
     if (pathname == NULL || strlen(pathname) == 0)
     {
         logError("Path is null or empty\n", NULL);
-        return 0;
+        return 1;
     }
-    if (hasChild(cwd, pathname))
+    FSNODE *folder = cwd;
+    if (pathname[0] == '/')
     {
-        logError("Directory %s already exists\n", pathname);
-        return 0;
+        folder = root;
     }
-    FSNODE *newNode = createNewNode(pathname, 'D');
-    addChildren(cwd, newNode);
+    int count;
+    char **parts = splitString(pathname, "/", &count);
+    for (int i = 0; i < count - 1; i++)
+    {
+        if (strcmp(parts[i], "..") == 0)
+        {
+            folder = folder->parent;
+        }
+        else
+        {
+            FSNODE *child = hasChild(folder, parts[i]);
+            if (child && child->type == 'D')
+            {
+                folder = child;
+            }
+            else
+            {
+                logError("Directory %s does not exist\n", parts[i]);
+                return NULL;
+            }
+        }
+    }
+
+    FSNODE *newNode = createNewNode(parts[count - 1], 'D');
+    addChildren(folder, newNode);
     return 0;
 }
 USER_COMMAND_FN(f_rmdir)
 {
-    FSNODE *child = NULL;
-    if (child = hasChild(cwd, pathname))
+    if (pathname == NULL || strlen(pathname) == 0)
     {
-        if (child->type == 'D')
+        logError("Path is null or empty\n", NULL);
+        return 1;
+    }
+
+    FSNODE *folder = cwd;
+    folder = navigateToPath(pathname, 0);
+
+    if (folder)
+    {
+        if (folder->type == 'D')
         {
-            if (child->child)
+            if (folder->child)
             {
                 logError("Directory %s is not empty\n", pathname);
                 return 0;
             }
-            removeChildren(cwd, child);
+            removeChildren(folder->parent, folder);
         }
         else
         {
-            logError("%s %s is not a directory\n", fileType(child), pathname);
+            logError("%s is not a directory\n", folder->name);
         }
     }
     else
@@ -140,7 +167,7 @@ USER_COMMAND_FN(f_ls)
     FSNODE *folder = cwd;
     if (pathname != NULL && strlen(pathname) > 0)
     {
-        folder = navigateToPath(pathname);
+        folder = navigateToPath(pathname, 0);
     }
 
     FSNODE *node = folder->child;
@@ -160,7 +187,7 @@ USER_COMMAND_FN(f_cd)
         cwd = root;
         return 0;
     }
-    folder = navigateToPath(pathname);
+    folder = navigateToPath(pathname, 0);
     if (folder)
     {
         cwd = folder;
@@ -184,21 +211,40 @@ USER_COMMAND_FN_NOARGS(f_pwd)
     return 0;
 }
 
+char *getFilename(char *str)
+{
+    char n = strlen(str);
+    char *suffix = str + n;
+    while (0 < n && str[--n] != '/')
+        ;
+    if (str[n] == '/')
+    {
+        suffix = str + n + 1;
+    }
+    char *answer = malloc(strlen(suffix) + 1);
+    strcpy(answer, suffix);
+    return answer;
+}
+
 USER_COMMAND_FN(f_creat)
 {
+    logDebug("Creating file %s\n", pathname);
     if (pathname == NULL || strlen(pathname) == 0)
     {
         logError("Path is null or empty\n", NULL);
         return 1;
     }
+    FSNODE *folder = cwd;
+    char *filename = getFilename(pathname);
+    folder = navigateToPath(pathname, 1);
     FSNODE *child;
-    if ((child = hasChild(cwd, pathname)))
+    if ((child = hasChild(folder, pathname)))
     {
         logError("%s %s already exists\n", fileType(child), pathname);
         return 0;
     }
-    FSNODE *newFile = createNewNode(pathname, 'F');
-    addChildren(cwd, newFile);
+    FSNODE *newFile = createNewNode(filename, 'F');
+    addChildren(folder, newFile);
     return 0;
 }
 
@@ -228,12 +274,88 @@ USER_COMMAND_FN(f_rm)
     return 0;
 }
 
+int fgetline(FILE *fp, char s[], int lim)
+{
+    int c, i;
+    for (i = 0; i < lim - 1 && (c = getc(fp)) != EOF && c != '\n'; ++i)
+        s[i] = c;
+    // if (c == '\n')
+    // {
+    //     s[i] = c;
+    //     ++i;
+    // }
+    s[i] = '\0';
+    return i;
+}
+
+#define MAXLINE 1024
+
 USER_COMMAND_FN(f_reload)
 {
+    FILE *fp = fopen("fssim_sanchez.txt", "r");
+    if (!fp)
+    {
+        logError("Could not open file\n", NULL);
+        return 1;
+    }
+
+    int len;            /* current line length */
+    int max;            /* maximum length seen so far */
+    char line[MAXLINE]; /* current input line */
+    while ((len = fgetline(fp, line, MAXLINE)) > 0)
+    {
+        logDebug("Retrieved line %s\n", line);
+        int count;
+        char **cmd = splitString(line, ":", &count);
+        if (count != 2)
+        {
+            logError("Invalid line: %s\n", line);
+        }
+        else
+        {
+            switch (cmd[0][0])
+            {
+            case 'D':
+                f_mkdir(cmd[1]);
+                break;
+            case 'F':
+                f_creat(cmd[1]);
+                break;
+            default:
+                logError("Invalid type: %c\n", cmd[0]);
+            }
+        }
+    }
+
+    fclose(fp);
     return 0;
 }
+
+void deepList(FILE *fp, FSNODE *node, char *route)
+{
+    while (node)
+    {
+        char temp[1024] = "";
+        sprintf(temp, "%s/%s", route, node->name);
+        fprintf(fp, "%c:%s\n", node->type, temp);
+        if (node->type == 'D')
+        {
+            deepList(fp, node->child, temp);
+        }
+        node = node->sibling;
+    }
+}
+
 USER_COMMAND_FN(f_save)
 {
+    FILE *fp = fopen("fssim_sanchez.txt", "w");
+    if (!fp)
+    {
+        logError("Could not open file\n", NULL);
+        return 1;
+    }
+    deepList(fp, root->child, "");
+    fclose(fp);
     return 0;
 }
 USER_COMMAND_FN_NOARGS(f_quit)
