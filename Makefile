@@ -1,4 +1,4 @@
-appname := cli
+appname := fssim
 
 CC := cc
 CPPFLAGS := -Wall -Wextra -pedantic -g -DDEBUG -O0
@@ -10,7 +10,7 @@ all: $(appname)
 debug: CFLAGS += -g -DDEBUG -O0
 debug: $(appname)
 
-srcfiles := $(shell find . -name "*.c")
+srcfiles := $(shell find src/ -name "*.c")
 objects  := $(patsubst %.c, %.o, $(srcfiles))
 
 
