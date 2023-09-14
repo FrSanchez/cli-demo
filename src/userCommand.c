@@ -77,6 +77,19 @@ USER_COMMAND_FN(f_ls)
 }
 USER_COMMAND_FN(f_cd)
 {
+    FSNODE *child = NULL;
+    if ((child = hasChild(cwd, pathname)) && (child->type == 'D'))
+    {
+        cwd = child;
+    }
+    else if (pathname == NULL || strlen(pathname) == 0)
+    {
+        cwd = root;
+    }
+    else
+    {
+        logError("Directory %s does not exist\n", pathname);
+    }
     return 0;
 }
 USER_COMMAND_FN_NOARGS(f_pwd)
