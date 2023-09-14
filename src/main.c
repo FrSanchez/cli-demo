@@ -5,51 +5,11 @@
 #include <sys/types.h>
 #include <ctype.h>
 #include <getopt.h>
-#include "commands.h"
+#include "userCommand.h"
 #include "stringUtils.h"
 #include "logger.h"
 
 #define MAXCOM 1000 // max number of letters to be supported
-
-command_t commands[] = {
-    {"cd", &cd, "Change directory"},
-    {"pwd", &pwd, "Print working directory"},
-    {"mkdir", &makedir, "Make directory"},
-    {"rmdir", &remdir, "Remove directory"},
-    {"ls", &ls, "List directory"},
-    {"quit", &quit, "Quit shell"},
-    {"help", &help, "Show help"},
-    {"save", &save, "Save folder structure"},
-    {"load", &load, "Load folder structure"},
-    {0, 0, 0}};
-
-command_t *findCommand(char *input);
-
-int help(int argc, char *args[])
-{
-    UNUSED(argc);
-    char *arg = args[0];
-    if (arg != NULL && strlen(arg) > 0)
-    {
-        command_t *cmd = findCommand(arg);
-        if (cmd != NULL)
-        {
-            printf("%s: %s\n", cmd->name, cmd->description);
-            return 0;
-        }
-        else
-        {
-            printf("Command not found: %s\n", arg);
-            return 1;
-        }
-    }
-    puts("The following commands are available:");
-    for (int i = 0; commands[i].name; i++)
-    {
-        printf("%s: %s\n", commands[i].name, commands[i].description);
-    }
-    return 0;
-}
 
 // Function to take input
 int takeInput(char *str)
@@ -57,7 +17,7 @@ int takeInput(char *str)
     printf(">>> ");
     if (fgets(str, MAXCOM, stdin) == NULL)
     {
-        quit(0, NULL);
+        f_quit();
     }
     str[strcspn(str, "\r\n")] = 0;
     if (strlen(str) == 0)
@@ -68,28 +28,51 @@ int takeInput(char *str)
     return 0;
 }
 
-command_t *findCommand(char *input)
-{
-    for (int i = 0; commands[i].name; i++)
-    {
-        if (strcmp(commands[i].name, input) == 0)
-        {
-            return &commands[i];
-        }
-    }
-    return NULL;
-}
-
 void executeCommand(int count, char *parsed[])
 {
-    command_t *command = findCommand(parsed[0]);
-    if (command != NULL)
+    int cmd = find_command(parsed[0]);
+    if (cmd < 0)
     {
-        command->method(count - 1, &parsed[1]);
+        logError("Invalid command: %s\n", parsed[0]);
     }
-    else
+    switch (cmd)
     {
-        printf("Command not found: %s\n", parsed[0]);
+    case 0:
+        f_mkdir(parsed[1]);
+        break;
+    case 1:
+        f_rmdir(parsed[1]);
+        break;
+    case 2:
+        f_ls(parsed[1]);
+        break;
+    case 3:
+        f_cd(parsed[1]);
+        break;
+    case 4:
+        f_pwd();
+        break;
+    case 5:
+        f_creat(parsed[1]);
+        break;
+    case 6:
+        f_rm(parsed[1]);
+        break;
+    case 7:
+        f_reload(parsed[1]);
+        break;
+    case 8:
+        f_save(parsed[1]);
+        break;
+    case 9:
+        f_quit();
+        break;
+    case 10:
+        f_help();
+        break;
+    default:
+        logError("Invalid command: %s\n", parsed[0]);
+        break;
     }
 }
 
@@ -183,7 +166,7 @@ int main(int argc, char *argv[])
     }
 
     inputLogLevel(logLevel);
-    initCommands(saveFile);
+    initUserCommands();
     while (1)
     {
         // take input
