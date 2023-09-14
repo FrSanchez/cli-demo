@@ -3,6 +3,7 @@
 #include <string.h>
 #include "logger.h"
 #include "fsNode.h"
+#include "stringUtils.h"
 #include "userCommand.h"
 
 FSNODE *root;
@@ -56,6 +57,42 @@ int find_command(char *user_command)
     return -1;
 }
 
+FSNODE *navigateToPath(char *pathname)
+{
+    FSNODE *folder = cwd;
+    if (pathname[0] == '/')
+    {
+        folder = root;
+    }
+    int count;
+    char **parts = splitString(pathname, "/", &count);
+    for (int i = 0; i < count; i++)
+    {
+        if (strcmp(parts[i], "..") == 0)
+        {
+            folder = folder->parent;
+        }
+        else if (strcmp(parts[i], ".") == 0)
+        {
+            continue;
+        }
+        else
+        {
+            FSNODE *child = hasChild(folder, parts[i]);
+            if (child && child->type == 'D')
+            {
+                folder = child;
+            }
+            else
+            {
+                logError("Directory %s does not exist\n", parts[i]);
+                return NULL;
+            }
+        }
+    }
+    return folder;
+}
+
 USER_COMMAND_FN(f_mkdir)
 {
     if (pathname == NULL || strlen(pathname) == 0)
@@ -100,7 +137,13 @@ USER_COMMAND_FN(f_rmdir)
 
 USER_COMMAND_FN(f_ls)
 {
-    FSNODE *node = cwd->child;
+    FSNODE *folder = cwd;
+    if (pathname != NULL && strlen(pathname) > 0)
+    {
+        folder = navigateToPath(pathname);
+    }
+
+    FSNODE *node = folder->child;
     while (node)
     {
         printf("%s%c ", node->name, node->type == 'D' ? '/' : ' ');
@@ -111,21 +154,19 @@ USER_COMMAND_FN(f_ls)
 
 USER_COMMAND_FN(f_cd)
 {
+    FSNODE *folder = cwd;
     if (pathname == NULL || strlen(pathname) == 0)
     {
         cwd = root;
         return 0;
     }
-    FSNODE *child = NULL;
-    if ((child = hasChild(cwd, pathname)) && (child->type == 'D'))
+    folder = navigateToPath(pathname);
+    if (folder)
     {
-        cwd = child;
+        cwd = folder;
+        return 0;
     }
-    else
-    {
-        logError("Directory %s does not exist\n", pathname);
-    }
-    return 0;
+    logError("No such file or directory: %s\n", pathname);
 }
 
 USER_COMMAND_FN_NOARGS(f_pwd)
