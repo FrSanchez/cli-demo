@@ -31,16 +31,17 @@ void addSibling(FSNODE *node, FSNODE *sibling)
     }
 }
 
-void addChildren(FSNODE *node, FSNODE *child)
+void addChildren(FSNODE *parent, FSNODE *child)
 {
-    if (node->child == NULL)
+    if (parent->child == NULL)
     {
-        node->child = child;
+        parent->child = child;
     }
     else
     {
-        addSibling(node->child, child);
+        addSibling(parent->child, child);
     }
+    child->parent = parent;
 }
 
 void removeSibling(FSNODE *node, FSNODE *sibling)

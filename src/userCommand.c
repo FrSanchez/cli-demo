@@ -27,6 +27,7 @@ COMMAND_HELP commandData[] = {
 
 void initUserCommands()
 {
+    logDebug("Initializing user commands\n");
     root = createNewNode("", 'D');
     root->parent = root;
     root->sibling = root;
@@ -36,10 +37,15 @@ void initUserCommands()
 int find_command(char *user_command)
 {
     int i = 0;
+    logDebug("Finding command %s\n", user_command);
     while (cmd[i])
     {
+        logDebug("Comparing %s to %s\n", user_command, cmd[i]);
         if (strcmp(user_command, cmd[i]) == 0)
+        {
+            logDebug("Found command %s at index %d\n", user_command, i);
             return i;
+        }
         i++;
     }
     return -1;
@@ -94,6 +100,16 @@ USER_COMMAND_FN(f_cd)
 }
 USER_COMMAND_FN_NOARGS(f_pwd)
 {
+    FSNODE *node = cwd;
+    char path[1024] = "";
+    do
+    {
+        char temp[1024] = "";
+        sprintf(temp, "/%s%s", node->name, path);
+        strcpy(path, temp);
+        node = node->parent;
+    } while (node != root);
+    printf("%s\n", path);
     return 0;
 }
 USER_COMMAND_FN(f_creat)
