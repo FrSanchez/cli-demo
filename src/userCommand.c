@@ -119,7 +119,7 @@ USER_COMMAND_FN(f_mkdir)
             else
             {
                 logError("Directory %s does not exist\n", parts[i]);
-                return NULL;
+                return 1;
             }
         }
     }
@@ -194,6 +194,7 @@ USER_COMMAND_FN(f_cd)
         return 0;
     }
     logError("No such file or directory: %s\n", pathname);
+    return 0;
 }
 
 USER_COMMAND_FN_NOARGS(f_pwd)
@@ -209,22 +210,6 @@ USER_COMMAND_FN_NOARGS(f_pwd)
     } while (node != root);
     printf("%s\n", path);
     return 0;
-}
-
-char *getFilename(char *str)
-{
-    char n = strlen(str);
-    char *suffix = str + n;
-    while (0 < n && str[--n] != '/')
-        ;
-    suffix = str + n;
-    if (str[n] == '/')
-    {
-        suffix += 1;
-    }
-    char *answer = malloc(strlen(suffix) + 1);
-    strcpy(answer, suffix);
-    return answer;
 }
 
 USER_COMMAND_FN(f_creat)
@@ -289,11 +274,15 @@ int fgetline(FILE *fp, char s[], int lim)
     return i;
 }
 
-#define MAXLINE 1024
-
 USER_COMMAND_FN(f_reload)
 {
-    FILE *fp = fopen("fssim_sanchez.txt", "r");
+    if (pathname == NULL || strlen(pathname) == 0)
+    {
+        logError("Path is null or empty\n", NULL);
+        return 1;
+    }
+    FILE *fp = fopen(pathname, "r");
+
     if (!fp)
     {
         logError("Could not open file\n", NULL);
@@ -301,7 +290,6 @@ USER_COMMAND_FN(f_reload)
     }
 
     int len;            /* current line length */
-    int max;            /* maximum length seen so far */
     char line[MAXLINE]; /* current input line */
     while ((len = fgetline(fp, line, MAXLINE)) > 0)
     {
@@ -349,7 +337,12 @@ void deepList(FILE *fp, FSNODE *node, char *route)
 
 USER_COMMAND_FN(f_save)
 {
-    FILE *fp = fopen("fssim_sanchez.txt", "w");
+    if (pathname == NULL || strlen(pathname) == 0)
+    {
+        logError("Path is null or empty\n", NULL);
+        return 1;
+    }
+    FILE *fp = fopen(pathname, "w");
     if (!fp)
     {
         logError("Could not open file\n", NULL);
@@ -361,6 +354,7 @@ USER_COMMAND_FN(f_save)
 }
 USER_COMMAND_FN_NOARGS(f_quit)
 {
+    f_save("fssim_sanchez.txt");
     printf("Goodbye!\n");
     exit(0);
 }

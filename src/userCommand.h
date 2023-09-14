@@ -1,8 +1,12 @@
 #ifndef USER_COMMAND_H
 #define USER_COMMAND_H
 
+#include "fsNode.h"
+
 #define USER_COMMAND_FN(name) int name(char *pathname)
 #define USER_COMMAND_FN_NOARGS(name) int name(void)
+
+#define MAXLINE 1024
 
 typedef struct
 {

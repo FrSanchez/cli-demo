@@ -1,3 +1,5 @@
+#pragma once
+
 #define mu_assert(message, test) \
     do                           \
     {                            \

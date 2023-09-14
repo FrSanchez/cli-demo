@@ -28,7 +28,7 @@ int takeInput(char *str)
     return 0;
 }
 
-void executeCommand(int count, char *parsed[])
+void executeCommand(char *parsed[])
 {
     int cmd = find_command(parsed[0]);
     switch (cmd)
@@ -114,7 +114,6 @@ void inputLogLevel(char *level)
 int main(int argc, char *argv[])
 {
     char inputString[MAXCOM];
-    char *saveFile = NULL;
     char *logLevel = "ERROR";
 
     static struct option long_options[] =
@@ -133,7 +132,7 @@ int main(int argc, char *argv[])
     while (1)
     {
         int option_index = 0;
-        c = getopt_long(argc, argv, "hv:l:f:", long_options, &option_index);
+        c = getopt_long(argc, argv, "hv:l:", long_options, &option_index);
         /* Detect the end of the options. */
         if (c == -1)
             break;
@@ -148,9 +147,6 @@ int main(int argc, char *argv[])
             exit(0);
         case 'l':
             logLevel = optarg;
-            break;
-        case 'f':
-            saveFile = optarg;
             break;
         case '?':
             /* getopt_long already printed an error message. */
@@ -172,7 +168,7 @@ int main(int argc, char *argv[])
         char **parsedArgs = splitString(inputString, " ", &count);
 
         // process
-        executeCommand(count, parsedArgs);
+        executeCommand(parsedArgs);
         free(parsedArgs);
     }
     return 0;

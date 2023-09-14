@@ -3,6 +3,22 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+char *getFilename(char *str)
+{
+    int n = strlen(str);
+    char *suffix = str + n;
+    while (0 < n && str[--n] != '/')
+        ;
+    suffix = str + n;
+    if (str[n] == '/')
+    {
+        suffix += 1;
+    }
+    char *answer = malloc(strlen(suffix) + 1);
+    strcpy(answer, suffix);
+    return answer;
+}
+
 /**
  * Function to split a string into an array of strings
  */
