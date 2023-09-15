@@ -28,5 +28,6 @@ USER_COMMAND_FN_NOARGS(f_help);
 void initUserCommands();
 int find_command(char *user_command);
 char *fileType(FSNODE *node);
+char freeWords(char **words);
 
 #endif

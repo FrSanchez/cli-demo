@@ -25,3 +25,18 @@ char *test_getFilename3()
     mu_assert("filename should be abc", strcmp(c, "abc") == 0);
     return 0;
 }
+
+char *test_splitString()
+{
+    puts("test_splitString");
+    int count = 1;
+    char **words = splitString("a/b/c", "/", &count);
+    for (int i = 0; i < count; i++)
+    {
+        puts(words[i]);
+    }
+    mu_assert("counst should be 3", count == 3);
+    mu_assert("c should be a", strcmp(words[0], "a") == 0);
+    freeWords(words);
+    return 0;
+}

@@ -82,10 +82,12 @@ FSNODE *navigateToPath(char *pathname, int offset)
             else
             {
                 logError("Directory %s does not exist\n", parts[i]);
+                freeWords(parts);
                 return NULL;
             }
         }
     }
+    freeWords(parts);
     return folder;
 }
 
@@ -96,38 +98,54 @@ USER_COMMAND_FN(f_mkdir)
         logError("Path is null or empty\n", NULL);
         return 1;
     }
+    int count;
+    char **parts = splitString(pathname, "/", &count);
+    if (count == 0)
+    {
+        logError("Path is null or empty\n", NULL);
+        free(parts);
+        return 1;
+    }
     FSNODE *folder = cwd;
     if (pathname[0] == '/')
     {
         folder = root;
     }
-    int count;
-    char **parts = splitString(pathname, "/", &count);
     for (int i = 0; i < count - 1; i++)
     {
-        if (strcmp(parts[i], "..") == 0)
+        char *part = parts[i];
+        if (strcmp(part, "..") == 0)
         {
             folder = folder->parent;
         }
         else
         {
-            FSNODE *child = hasChild(folder, parts[i]);
+            FSNODE *child = hasChild(folder, part);
             if (child && child->type == 'D')
             {
                 folder = child;
             }
             else
             {
-                logError("Directory %s does not exist\n", parts[i]);
+                logError("Directory %s does not exist\n", part);
+                freeWords(parts);
                 return 1;
             }
         }
     }
 
+    if (hasChild(folder, parts[count - 1]))
+    {
+        logError("Directory %s already exists\n", parts[count - 1]);
+        freeWords(parts);
+        return 1;
+    }
     FSNODE *newNode = createNewNode(parts[count - 1], 'D');
     addChildren(folder, newNode);
+    freeWords(parts);
     return 0;
 }
+
 USER_COMMAND_FN(f_rmdir)
 {
     if (pathname == NULL || strlen(pathname) == 0)
@@ -261,17 +279,6 @@ USER_COMMAND_FN(f_rm)
         logError("File %s does not exist\n", pathname);
     }
     return 0;
-}
-
-// custom getline to ingore \n at the end
-// https://stackoverflow.com/questions/18278240/how-does-getline-function-work-here
-int fgetline(FILE *fp, char s[], int lim)
-{
-    int c, i;
-    for (i = 0; i < lim - 1 && (c = getc(fp)) != EOF && c != '\n'; ++i)
-        s[i] = c;
-    s[i] = '\0';
-    return i;
 }
 
 USER_COMMAND_FN(f_reload)

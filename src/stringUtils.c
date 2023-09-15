@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <assert.h>
 
 char *getFilename(char *str)
 {
@@ -19,45 +20,50 @@ char *getFilename(char *str)
     return answer;
 }
 
+char freeWords(char **words)
+{
+    for (int i = 0; words[i] != NULL; i++)
+    {
+        free(words[i]);
+    }
+    free(words);
+}
 /**
  * Function to split a string into an array of strings
  */
-char **splitString(char *str, char *seps, int *size)
-{
+char **splitString(char *my_str_literal, const char *a_delim, size_t *out)
+{ // More general pattern:
+    char *token, *str, *tofree;
     char **res = NULL;
-    char *p = strtok(str, seps);
-    int n_spaces = 0;
+    int words = 0;
 
-    while (p)
+    tofree = str = strdup(my_str_literal); // We own str's memory now.
+    while ((token = strsep(&str, a_delim)))
     {
-        res = (char **)realloc(res, sizeof(char *) * ++n_spaces);
-        if (res == NULL)
+        if (token && strlen(token) > 0)
         {
-            fprintf(stderr, "splitString: memory allocation failed\n");
-            exit(-1); /* memory allocation failed */
+            res = (char **)realloc(res, sizeof(char *) * ++words);
+            assert(res != NULL);
+            char *word = malloc(strlen(token) + 1);
+            strcpy(word, token);
+            res[words - 1] = word;
         }
-        res[n_spaces - 1] = p;
-        p = strtok(NULL, seps);
     }
-
     /* realloc one extra element for the last NULL */
-    res = (char **)realloc(res, sizeof(char *) * (n_spaces + 1));
-    res[n_spaces] = 0;
-
-    if (size != NULL)
-    {
-        *size = n_spaces;
-    }
+    res = (char **)realloc(res, sizeof(char *) * (words + 1));
+    res[words] = 0;
+    *out = words;
+    free(tofree);
     return res;
 }
 
-char *toUpper(const char *input)
+// custom getline to ingore \n at the end
+// https://stackoverflow.com/questions/18278240/how-does-getline-function-work-here
+int fgetline(FILE *fp, char s[], int lim)
 {
-    char *output = malloc(strlen(input) + 1);
-    strcpy(output, input);
-    for (size_t i = 0; i < strlen(output); i++)
-    {
-        output[i] = toupper(output[i]);
-    }
-    return output;
+    int c, i;
+    for (i = 0; i < lim - 1 && (c = getc(fp)) != EOF && c != '\n'; ++i)
+        s[i] = c;
+    s[i] = '\0';
+    return i;
 }
